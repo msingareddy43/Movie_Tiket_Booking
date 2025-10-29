@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: movie_db
+      POSTGRES_USER: movie_user
+      POSTGRES_PASSWORD: movie_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    container_name: django_app
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn Movie_Tiket_Booking.wsgi:application --bind 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=0
+      - DJANGO_ALLOWED_HOSTS=*
+      - DATABASE_URL=postgres://movie_user:movie_pass@db:5432/movie_db
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_server
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+    depends_on:
+      - web
+
+  test:
+    build: .
+    container_name: django_test_runner
+    command: >
+      sh -c "pytest -v --disable-warnings --maxfail=1"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgres://movie_user:movie_pass@db:5432/movie_db
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:
+
