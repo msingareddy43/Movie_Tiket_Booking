@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = "ap-south-1"
+        AWS_ACCESS_KEY_ID = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        AWS_SECRET_ACCESS_KEY = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ECR_REPO_URL = "12345698765.amazonaws.com/movie-ticket-app"
+        CLUSTER_NAME = "movie-ticket-app-cluster"
+        SERVICE_NAME = "movie-ticket-app-service"
+        IMAGE_TAG = "latest"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                echo "📦 Cloning main branch from GitHub..."
+                git branch: 'main', url: 'https://github.com/msingareddy43/Movie_Tiket_Booking.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "🐳 Building Docker image from Dockerfile..."
+                sh '''
+                cd Movie_Tiket_Bookingapp
+                docker build -t movie-ticket-app .
+                docker tag movie-ticket-app:latest $ECR_REPO_URL:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Login to AWS ECR') {
+            steps {
+                echo "🔐 Logging in to Amazon ECR..."
+                sh '''
+                aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                aws configure set default.region $AWS_REGION
+                aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URL
+                '''
+            }
+        }
+
+        stage('Push Docker Image to ECR') {
+            steps {
+                echo "🚀 Pushing image to ECR..."
+                sh '''
+                docker push $ECR_REPO_URL:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Update ECS Service') {
+            steps {
+                echo "🔄 Updating ECS service with new image..."
+                sh '''
+                aws ecs update-service \
+                    --cluster $CLUSTER_NAME \
+                    --service $SERVICE_NAME \
+                    --force-new-deployment \
+                    --region $AWS_REGION
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Deployment complete!"
+            echo "🌍 App should be live soon at: http://movie-ticket-app-alb-197302161.ap-south-1.elb.amazonaws.com/"
+        }
+        failure {
+            echo "❌ Build or deployment failed. Check the logs for details."
+        }
+    }
+}
