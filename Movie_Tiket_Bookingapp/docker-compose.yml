@@ -28,6 +28,11 @@ services:
       - postgres_db
     env_file:
       - .env
+    environment:
+      # Add ALLOWED_HOSTS dynamically (ALB + localhost)
+      - ALLOWED_HOSTS=movie-ticket-app-alb-197302161.ap-south-1.elb.amazonaws.com,127.0.0.1,localhost
+      - DEBUG=False
+      - DJANGO_SETTINGS_MODULE=Movie_Tiket_Booking.settings
 
   nginx:
     image: nginx:latest
@@ -51,4 +56,3 @@ services:
 
 volumes:
   postgres_data:
-
