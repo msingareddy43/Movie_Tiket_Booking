@@ -3,4 +3,6 @@ pytest
 pytest-django
 psycopg2-binary
 djangorestframework
+whitenoise
+
 
