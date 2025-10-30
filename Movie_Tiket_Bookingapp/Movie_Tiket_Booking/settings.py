@@ -25,7 +25,15 @@ SECRET_KEY = 'g9c1gd@w4_9vf#$s0ajiz)f65$63h-qns+g%1u*eclwgtj580h'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['52.66.64.131', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    '52.66.64.131',
+    'localhost',
+    '127.0.0.1',
+    'movie-ticket-app-alb-197302161.ap-south-1.elb.amazonaws.com',
+    '*'
+]
+
+#ALLOWED_HOSTS = ['52.66.64.131', 'localhost', '127.0.0.1']
 #ALLOWED_HOSTS = []
 
 
